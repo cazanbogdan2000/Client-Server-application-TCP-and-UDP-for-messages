@@ -1,0 +1,89 @@
+Cazan Bogdan-Marian 323CB
+
+                            Tema 2 PC
+
+        Am ales pentru aceasta tema sa folosesc urmtaorea logica de implementare:
+    Pentru serverul care poate primi atat clienti TCP cat si UDP, clientii 
+    de tip TCP vor fi cei care primesc datele la topicurile la care sunt abonati
+    iar cei de tip UDP vor juca rolul de provideri pentru datele respective.
+    Am pus mai multe delatii in comentariile din cod.
+
+        Pentru inceput, o sa precizez faptul ca am salvat toate datele esentiale
+    din server intr-o structura numita chiar asa, server. Lucrul asta m-a ajutat
+    sa operez mult mai usor cu obiectele mele (desi am scris relativ mai mult,
+    consider ca logica este mai usor de inteles). De asemenea, am folosit foarte
+    mult structuri in cadrul temei, pentru a evidentia cat mai bine continutul
+    (setul) de date.
+
+        Astfel, protocolul pe care l-am realizat are urmatoarea logica: serverul
+    joaca rolul de broker intre clientii UDP, care sunt provideri pentru clientii
+    TCP, care sunt consumatori ce poarta aliasul de subscriber. Un client UDP
+    trimite un mesaj catre server, sub forma unui char*. Prin urmare, serverul
+    este cel care trebuie sa se ocupe de prelucrearea datelor si transmiterea 
+    lor catre clientul TCP. Asadar, am creat o structura ce poate fi gasita in
+    helpers.h, numita msg2subcr (message to subscriber), care are un comanda,
+    de tipul "exit", pentru cazul in care se inchide serverul (prin urmare, si
+    clientii conectati la acesta vor fi inchisi), "duplicate", pentru cazul in
+    care un client incearca sa se conecteze la server cu un ID pe care deja il
+    detine un alt client. In cazul in care nu avem nicio comanda, atunci serverul
+    va trimite mai departe un mesaj prelucrat in urma primirii de la providerul
+    UDP, si vor fi retinute astfel campuri cum ar fi port, addr, topic, type,
+	sign, int_value, short_real_value, mantisa, exponent si string_value.
+
+        In celalalt sens, de la client TCP la server, protocolul va folosi o
+    structura numita msg2srv. Aceasta structura contine un camp numit "action",
+    care poate avea urmatoarele valori:
+    --> "exit" -- marcheaza faptul ca subscriberul vrea sa se deconecteze de la
+                  server
+    --> "subscribe" -- spune cand subscriberul vrea sa se aboneze la un nou topic
+                       in spate, serverul va salva aceste abonari
+    --> "unsubscribe" -- marcheaza faptul ca un client doreste de la un anumit
+                         topic; numele topicurilor sunt citite din client de la
+                         tastatura.
+        De asemnea, restul campurilor din structura msg2srv sunt "topic", cu
+    rolul de a retine numele topicului la care clientul doreste sa se aboneze /
+    dezaboneze, si un camp SF, care poate fi 0 sau 1 (store and forward).
+
+        Pentru a lucra cu subscrierile, avem doi vectori, unul pentru topicuri
+    fara SF (sau cu SF = 0), si un alt vector cu SF (sau SF = 1). Puteam sa le
+    tin si pe toate la gramada, dar am zis ca ar fi mult mai bine impartite daca
+    as avea 2 vectori separati, pentru fiecare camp in parte. In cazul in care
+    se primeste un mesaj de la udp, acesta se ia, se prelucreaza, si dupa este
+    trimis la clientii abonati la topicul respectiv, cel extras din mesaj. Pentru
+    clientii care s-au abonat cu SF = 0, atunci se va trimite direct mesajul
+    catre toti clientii activi. In cazul in care avem SF = 1, atunci vom pune
+    intr-o coada auxiliara (pe care o gasim in struct Server* server) toate
+    mesajele ce trebuie trimise clientilor care, desi sunt abonati cu SF = 1 la
+    respectivele topice, acestia nu au fost online in momentul primirii mesajului
+    direct de la UDP, atunci il vor primi in momentul logarii.
+
+        Alte observatii si implementari in cadrul temei: am dezactivat algoritmul
+    lui Nagle (a se vedea in cod), am facut ca fiecare client sa se conecteze
+    la un moment dat de pe o singura masina (nu se pot permite mai multi clienti
+    cu acelasi ID). Programul nu are o functionare lenta, si nu s-a limitat 
+    nuamrul de clienti (adica am realizat multiplexarea I/O).
+
+        Probleme intampinate in cadrul temei: nu cred ca se poate numi chiar o
+    problema intampinata, dar, uneori, pica testul de quick-flow. Asta se intampla
+    extrem de rar, si doar atunci cand pornesc calculatorul si ii dau prima rulare.
+    Dupa, programul merge ca uns, ori de cate ori se ruleaza checker-ul. Din nou,
+    nici macar faza cu pornitul calculatorului se intampla o data din 7 incercari,
+    deci consider ca nu poate fi luat drept o problema.
+        In enunt, nu scria nimic de partea de compilare, asa ca, cum am invatat
+    si la IOCLA, un procedeu suplimentar de eficientizare, am folosit flag de
+    optimizare :).
+        In final, o ultima problema intampinata a fost legata de checker, care
+    avea destul de multe buguri; spre exemplu, daca rulam checker-ul si imi dadea
+    segmentation fault, sau stack overflow, sau orice eroare care imi oprea brusc
+    programul, atunci checker-ul lasa active niste procese, si nu mai puteam
+    dupa sa il folosesc, chiar daca programul perfect. Drept urmare, trebuia sa
+    repornesc calculatorul, si dupa mergea perfect din prima rulare, fara a mai
+    fi modificat nimic in cod (de aici concluzia cu probleme la checker).
+
+        Ca si concluzie legata de tema, a fost una interesanta, destul de stresanta
+    cu toate nebuniile facute in C (desi am ales C++, am folosit o imbinare intre
+    cele 2, partea de C fiind vazuta doar la retinerea vectorilor), si multe
+    corner case-uri, unele chiar netestate, cum ar fi, spre exemplu, partea de
+    unsubcribe a unui client de la un topic (pe care totusi am implementat-o si
+    am testat-o, merge ok). Daca nu aveam atatea erori C based, probabil ca tema
+    mergea intr-o singura zi, de dimineata pana seara.
